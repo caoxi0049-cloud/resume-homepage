@@ -1,29 +1,29 @@
 # AGENTS.md
 
-## Project
+## 项目概览
 
-This repository is a static personal resume homepage for Cao Xi. It is deployed with GitHub Pages:
+这是曹曦的个人求职主页，一个纯静态网站，已通过 GitHub Pages 发布。
 
-- Site: https://caoxi0049-cloud.github.io/resume-homepage/
-- Repository: https://github.com/caoxi0049-cloud/resume-homepage
+- 线上地址：https://caoxi0049-cloud.github.io/resume-homepage/
+- GitHub 仓库：https://github.com/caoxi0049-cloud/resume-homepage
 
-The site is intentionally lightweight: plain HTML, CSS, and JavaScript. There is no build step, package manager, backend, or framework.
+项目使用原生 HTML、CSS、JavaScript 实现。没有构建步骤，没有前端框架，没有后端服务，也没有包管理器依赖。
 
-## File Map
+## 文件结构
 
-- `index.html`: Page structure and semantic containers.
-- `styles.css`: Visual design, responsive layout, assistant UI, and hero layout.
-- `app.js`: Runtime rendering, language switching, contact panel, resume assistant interactions.
-- `profile-data.js`: Primary editable content source for profile data, work experience, education, assistant prompts, and assistant answers.
-- `assets/avatar.jpg`: About Me portrait.
-- `assets/hero-photo.jpg`: Homepage hero portrait.
-- `assets/resume.pdf`: Expected resume download file. This may be missing until the user provides a PDF.
+- `index.html`：页面结构、语义容器和主要模块。
+- `styles.css`：视觉样式、响应式布局、首页排版、AI 简历助手样式。
+- `app.js`：页面数据渲染、语言切换、联系弹层、AI 简历助手交互。
+- `profile-data.js`：主要可编辑内容，包括个人信息、工作经历、教育背景、助手问题和回答。
+- `assets/avatar.jpg`：关于我模块头像。
+- `assets/hero-photo.jpg`：首页人物照片。
+- `assets/resume.pdf`：简历下载文件。用户提供 PDF 后应放在这个路径。
 
-## Local Workflow
+## 本地维护流程
 
-Open `index.html` directly in a browser for a quick preview. For more accurate browser behavior, serve the folder with a local static server.
+可以直接用浏览器打开 `index.html` 预览。若要更接近线上行为，可用本地静态服务预览整个目录。
 
-Use the installed Git tools:
+本机 Git 路径：
 
 ```powershell
 D:\Programs\Git\cmd\git.exe status
@@ -32,102 +32,122 @@ D:\Programs\Git\cmd\git.exe commit -m "Update resume homepage"
 D:\Programs\Git\cmd\git.exe push
 ```
 
-GitHub CLI is installed at:
+GitHub CLI 路径：
 
 ```powershell
 D:\Programs\GitHubCLI\gh.exe
 ```
 
-## Content Editing Rules
+## 内容编辑规则
 
-Treat `profile-data.js` as the source of truth for resume content. Prefer editing data there instead of hardcoding resume text in `index.html`.
+`profile-data.js` 是简历内容的主要数据源。除非是页面结构调整，否则不要把简历正文硬编码到 `index.html`。
 
-Keep these content boundaries:
+当前内容边界：
 
-- Homepage uses `basics.heroAvatar`, currently `assets/hero-photo.jpg`.
-- About Me uses `basics.avatar`, currently `assets/avatar.jpg`.
-- Company strip should only show prior employers requested by the user, currently Dmall / Dmall-related `多点` and TAL `好未来`.
-- Work experience should include only company-level entries unless the user explicitly asks to show project entries separately.
-- Project details can still exist in the assistant knowledge base, but should not automatically appear in the Work Experience timeline.
+- 首页照片使用 `basics.heroAvatar`，当前为 `assets/hero-photo.jpg`。
+- 关于我头像使用 `basics.avatar`，当前为 `assets/avatar.jpg`。
+- 首页“曾服务于”仅展示用户指定的历史公司，目前为“多点”和“好未来”。
+- 工作经历只展示公司级经历：多点生活、好未来。
+- 重点项目可以保留在 AI 简历助手知识库里，但不要默认作为独立工作经历展示。
+- 下载简历按钮依赖 `assets/resume.pdf`。如果文件缺失，应保留友好提示，不要让页面直接报错。
 
-When adding Chinese text, preserve UTF-8. If PowerShell displays mojibake, do not assume the file is corrupted; verify by browser behavior or a UTF-8-aware reader before rewriting large sections.
+添加或修改中文内容时，保持 UTF-8 编码。PowerShell 有时会把中文显示成乱码，不要仅凭终端显示判断文件损坏；应结合浏览器或 UTF-8 读取方式确认。
 
-## Visual Direction
+## 视觉方向
 
-The current visual style is a clean black-and-white resume portfolio with a restrained editorial layout.
+当前风格是黑白极简的个人作品集/求职主页。
 
-Maintain these choices unless the user asks otherwise:
+维护时默认保留这些设计约束：
 
-- Minimal black, white, and gray palette.
-- Large Chinese role title on the homepage.
-- `PRODUCT MANAGER` as a smaller outlined wordmark below the main role title, not behind the portrait.
-- Original-color portraits, no grayscale filter.
-- Floating resume assistant in the lower-right corner.
-- Mobile layout should avoid overlapping title, portrait, and assistant controls.
+- 主色调以黑、白、灰为主。
+- 首页保留大号中文职位标题“产品经理”。
+- `PRODUCT MANAGER` 是标题下方的描边字，不要放到照片后方遮挡。
+- 头像和首页照片使用原图颜色，不加黑白滤镜。
+- AI 简历助手固定在右下角。
+- 移动端要避免标题、照片、助手按钮互相遮挡。
 
-Avoid decorative gradients, busy backgrounds, or heavy animation.
+不要随意添加复杂动画、重背景、渐变装饰或营销型首屏。
 
-## Resume Assistant
+## AI 简历助手
 
-The current assistant is front-end only. It uses keyword matching against `profile-data.js -> assistant.answers`.
+当前 AI 简历助手是前端本地问答，不接入真实大模型。
 
-Important behavior:
+现有机制：
 
-- The assistant launcher is a message icon.
-- A nudge bubble appears after 3 seconds if the assistant has not been opened in the current session.
-- Opening the assistant dismisses the nudge for the current session via `sessionStorage`.
+- 助手入口是右下角消息图标。
+- 页面打开 3 秒后，如果用户没有打开助手，会出现提示气泡。
+- 用户打开助手后，本次会话不再重复显示提示气泡，状态通过 `sessionStorage` 保存。
+- 回答基于 `profile-data.js -> assistant.answers` 的关键词匹配。
 
-Do not put model API keys in this repository. It is public and hosted on GitHub Pages.
+不要在这个公开仓库中写入任何模型 API Key、Token 或私密配置。
 
-## RAG Upgrade Direction
+## RAG 升级方向
 
-For a safer staged RAG implementation, prefer this roadmap:
+如果后续要把简历助手升级为 RAG，建议分阶段实现。
 
-1. Add a static `knowledge-base.js` or `knowledge-base.json` with structured resume and project documents.
-2. Improve front-end retrieval with section scoring and source snippets.
-3. If true generative answers are required, add a backend layer such as Vercel Functions, Netlify Functions, or Cloudflare Workers.
-4. Keep API keys only in backend environment variables.
-5. The frontend should call the backend API, never a model provider directly.
+第一阶段：静态知识库增强
 
-Recommended knowledge document fields:
+- 新增 `knowledge-base.js` 或 `knowledge-base.json`。
+- 把简历、项目经历、项目复盘、常见面试问题拆成结构化知识片段。
+- 前端根据问题进行文本检索和片段匹配。
+- 仍然不接入大模型，保持 GitHub Pages 可直接运行。
 
-- `id`
-- `title`
-- `type` such as `work`, `project`, `education`, `skill`, `faq`
-- `keywords`
-- `summary`
-- `details`
-- `metrics`
-- `source`
+第二阶段：真实生成式 RAG
 
-Assistant answers should be grounded in the knowledge base and avoid inventing unverified claims.
+- 增加后端服务，例如 Vercel Functions、Netlify Functions 或 Cloudflare Workers。
+- API Key 只放在后端环境变量中。
+- 前端只调用自己的后端接口，不直接调用模型厂商接口。
+- 后端完成知识检索、提示词组装和模型回答。
 
-## Deployment
+推荐知识库字段：
 
-After committing changes, push to `main`. GitHub Pages deploys from:
+```js
+{
+  id: "project-douyin-local-life",
+  title: "抖音本地生活项目",
+  type: "project",
+  keywords: ["抖音", "本地生活", "团购券", "会员增长"],
+  summary: "...",
+  details: ["...", "..."],
+  metrics: ["销售单量 7w+", "销售金额 1200w+", "券核销率 44.1%"],
+  source: "resume"
+}
+```
 
-- Branch: `main`
-- Folder: `/`
+RAG 回答必须基于知识库内容，不要编造未验证经历、数据或业务细节。
 
-Verify deployment:
+## 发布流程
+
+项目通过 GitHub Pages 从 `main` 分支根目录发布。
+
+发布配置：
+
+- Branch：`main`
+- Folder：`/`
+
+提交并推送后，GitHub Pages 会自动构建。
+
+查看 Pages 状态：
 
 ```powershell
 D:\Programs\GitHubCLI\gh.exe api repos/caoxi0049-cloud/resume-homepage/pages --jq "{url:.html_url,status:.status}"
 ```
 
-Expected site URL:
+线上地址：
 
 ```text
 https://caoxi0049-cloud.github.io/resume-homepage/
 ```
 
-If the browser still shows old assets, use `Ctrl + F5` to bypass cache.
+如果浏览器仍显示旧样式或旧图片，优先使用 `Ctrl + F5` 强制刷新缓存。
 
-## Safety Notes
+## 发布前检查
 
-This is a public resume site. Before publishing, check for:
+这是公开求职主页。每次发布前检查：
 
-- Personal phone and email are intentional.
-- No private internal business details beyond what the user has approved.
-- No API keys, tokens, local paths, or private files.
-- `assets/resume.pdf` should be intentionally provided by the user before publishing.
+- 手机号和邮箱是否确认可以公开。
+- 是否包含未授权公开的公司内部数据。
+- 是否包含 API Key、Token、本地路径或私密文件。
+- `assets/resume.pdf` 是否由用户明确提供并允许发布。
+- 首页照片和关于我头像是否使用了用户指定图片。
+
