@@ -13,8 +13,8 @@ window.profileData = {
       en: "👋 Hi, I am Cao Xi",
     },
     heroOutline: {
-      zh: "SENIOR PRODUCT MANAGER",
-      en: "SENIOR PRODUCT MANAGER",
+      zh: "PRODUCT MANAGER",
+      en: "PRODUCT MANAGER",
     },
     city: {
       zh: "北京 / 上海 / 远程协作",
@@ -23,6 +23,7 @@ window.profileData = {
     email: "caoxi4929@qq.com",
     phone: "18291980049",
     wechat: "18291980049",
+    heroAvatar: "assets/hero-photo.jpg",
     avatar: "assets/avatar.jpg",
     resume: "assets/resume.pdf",
     roleTag: "SaaS Product",

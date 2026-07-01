@@ -55,7 +55,7 @@
       node.href = basics.resume || "#";
     });
 
-    setupImage('[data-field="avatar"]', ".portrait-fallback", basics.avatar);
+    setupImage('[data-field="avatar"]', ".portrait-fallback", basics.heroAvatar || basics.avatar);
     setupImage('[data-field="avatarSmall"]', ".mini-fallback", basics.avatar);
 
     renderCompanyStrip();
