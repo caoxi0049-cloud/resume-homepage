@@ -5,6 +5,8 @@
     theme: localStorage.getItem("profile-theme") || "light",
     assistantOpen: false,
     contactOpen: false,
+    nudgeReady: false,
+    nudgeDismissed: sessionStorage.getItem("assistant-nudge-dismissed") === "true",
     messages: [],
   };
 
@@ -174,6 +176,8 @@
     }
     const panel = $(".assistant-panel");
     if (panel) panel.dataset.state = state.assistantOpen ? "open" : "closed";
+    const nudge = $(".assistant-nudge");
+    if (nudge) nudge.dataset.state = state.nudgeReady && !state.assistantOpen && !state.nudgeDismissed ? "visible" : "hidden";
 
     const messages = $('[data-list="assistantMessages"]');
     if (messages) {
@@ -253,9 +257,17 @@
     $$('[data-action="toggle-assistant"]').forEach((button) => {
       button.addEventListener("click", () => {
         state.assistantOpen = !state.assistantOpen;
+        state.nudgeDismissed = true;
+        sessionStorage.setItem("assistant-nudge-dismissed", "true");
         renderAssistant(false);
       });
     });
+
+    window.setTimeout(() => {
+      if (state.assistantOpen || state.nudgeDismissed) return;
+      state.nudgeReady = true;
+      renderAssistant(false);
+    }, 3000);
 
     $('[data-form="assistant"]')?.addEventListener("submit", (event) => {
       event.preventDefault();

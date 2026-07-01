@@ -99,7 +99,16 @@
       </a>
     </aside>
 
-    <button class="assistant-launcher" type="button" data-action="toggle-assistant" aria-label="Open resume assistant">●●</button>
+    <button class="assistant-launcher" type="button" data-action="toggle-assistant" aria-label="Open resume assistant">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.7 8.7 0 0 1-7.8 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.8-5.2A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5Z" />
+        <path d="M8.5 11.5h.01M12.5 11.5h.01M16.5 11.5h.01" />
+      </svg>
+    </button>
+
+    <button class="assistant-nudge" type="button" data-action="toggle-assistant" data-state="hidden">
+      想了解更多经历？可以问问简历助手
+    </button>
 
     <aside class="assistant-panel" data-state="closed" aria-label="Resume assistant">
       <div class="assistant-header">
