@@ -26,6 +26,7 @@ window.profileData = {
     heroAvatar: "assets/hero-photo.jpg",
     avatar: "assets/avatar.jpg",
     resume: "assets/resume.pdf",
+    resumeFileName: "曹曦_18291980049_产品经理.pdf",
     roleTag: "SaaS Product",
     availability: {
       zh: "会员营销 / SaaS / 中后台产品",

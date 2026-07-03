@@ -55,6 +55,7 @@
     });
     $$('[data-field="resumeLink"], [data-field="aboutResumeLink"]').forEach((node) => {
       node.href = basics.resume || "#";
+      if (basics.resumeFileName) node.setAttribute("download", basics.resumeFileName);
     });
 
     setupImage('[data-field="avatar"]', ".portrait-fallback", basics.heroAvatar || basics.avatar);
