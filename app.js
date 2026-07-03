@@ -1,6 +1,7 @@
 (function () {
   const data = window.profileData || {};
   const knowledgeBase = window.resumeKnowledgeBase || [];
+  const assistantConfig = window.resumeAssistantConfig || {};
   const state = {
     language: localStorage.getItem("profile-language") || data.defaultLanguage || "zh",
     theme: localStorage.getItem("profile-theme") || "light",
@@ -202,13 +203,24 @@
     if (panel) panel.dataset.state = state.contactOpen ? "open" : "closed";
   }
 
-  function askAssistant(question) {
+  async function askAssistant(question) {
     const cleanQuestion = question.trim();
     if (!cleanQuestion) return;
+
+    state.messages.push({ from: "user", content: cleanQuestion });
+    state.messages.push({ from: "assistant", content: "正在结合知识库生成回答..." });
+    renderAssistant(false);
+
+    const backendAnswer = await askBackendAssistant(cleanQuestion);
+    if (backendAnswer) {
+      state.messages[state.messages.length - 1] = { from: "assistant", content: backendAnswer };
+      renderAssistant(false);
+      return;
+    }
+
     const ragAnswer = answerFromKnowledgeBase(cleanQuestion);
     if (ragAnswer) {
-      state.messages.push({ from: "user", content: cleanQuestion });
-      state.messages.push({ from: "assistant", content: ragAnswer });
+      state.messages[state.messages.length - 1] = { from: "assistant", content: ragAnswer };
       renderAssistant(false);
       return;
     }
@@ -217,9 +229,33 @@
     const match = (data.assistant?.answers || []).find((item) =>
       (item.keywords || []).some((keyword) => lower.includes(String(keyword).toLowerCase()))
     );
-    state.messages.push({ from: "user", content: cleanQuestion });
-    state.messages.push({ from: "assistant", content: text(match?.answer) || text(data.assistant?.fallback) });
+    state.messages[state.messages.length - 1] = { from: "assistant", content: text(match?.answer) || text(data.assistant?.fallback) };
     renderAssistant(false);
+  }
+
+  async function askBackendAssistant(question) {
+    const endpoint = assistantConfig.apiEndpoint;
+    if (!endpoint) return "";
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+
+      if (!response.ok) return "";
+
+      const result = await response.json();
+      const answer = String(result.answer || "").trim();
+      const sources = Array.isArray(result.sources) ? result.sources.filter(Boolean) : [];
+
+      if (!answer) return "";
+      if (!sources.length) return answer;
+      return `${answer}\n\n依据来源：${sources.slice(0, 3).join("、")}`;
+    } catch (error) {
+      return "";
+    }
   }
 
   function answerFromKnowledgeBase(question) {
