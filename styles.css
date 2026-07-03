@@ -737,6 +737,7 @@ body[data-theme="dark"] .hero-statement {
   background: var(--panel);
   color: var(--ink);
   font-size: 14px;
+  white-space: pre-line;
 }
 
 .message.user {

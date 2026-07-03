@@ -1,5 +1,6 @@
 (function () {
   const data = window.profileData || {};
+  const knowledgeBase = window.resumeKnowledgeBase || [];
   const state = {
     language: localStorage.getItem("profile-language") || data.defaultLanguage || "zh",
     theme: localStorage.getItem("profile-theme") || "light",
@@ -204,6 +205,14 @@
   function askAssistant(question) {
     const cleanQuestion = question.trim();
     if (!cleanQuestion) return;
+    const ragAnswer = answerFromKnowledgeBase(cleanQuestion);
+    if (ragAnswer) {
+      state.messages.push({ from: "user", content: cleanQuestion });
+      state.messages.push({ from: "assistant", content: ragAnswer });
+      renderAssistant(false);
+      return;
+    }
+
     const lower = cleanQuestion.toLowerCase();
     const match = (data.assistant?.answers || []).find((item) =>
       (item.keywords || []).some((keyword) => lower.includes(String(keyword).toLowerCase()))
@@ -211,6 +220,79 @@
     state.messages.push({ from: "user", content: cleanQuestion });
     state.messages.push({ from: "assistant", content: text(match?.answer) || text(data.assistant?.fallback) });
     renderAssistant(false);
+  }
+
+  function answerFromKnowledgeBase(question) {
+    if (!knowledgeBase.length) return "";
+    const scoredDocs = knowledgeBase
+      .map((doc) => {
+        const snippets = rankSnippets(doc, question);
+        const keywordScore = scoreText([doc.title, ...(doc.keywords || [])].join(" "), question) * 2;
+        const contentScore = snippets.reduce((sum, item) => sum + item.score, 0);
+        return { doc, snippets, score: keywordScore + contentScore };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    if (!scoredDocs.length) return "";
+
+    const bestSnippets = scoredDocs
+      .flatMap((item) => item.snippets.slice(0, 2).map((snippet) => ({ ...snippet, title: item.doc.title })))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    if (!bestSnippets.length) return "";
+
+    const answerLines = bestSnippets.map((snippet) => `- ${snippet.text}`);
+    const sources = scoredDocs.map((item) => item.doc.title).join("、");
+
+    return [
+      "我从简历助手知识库里检索到以下相关信息：",
+      "",
+      ...answerLines,
+      "",
+      `依据来源：${sources}`,
+    ].join("\n");
+  }
+
+  function rankSnippets(doc, question) {
+    return splitIntoSnippets(doc.content || "")
+      .map((snippet) => ({ text: snippet, score: scoreText(snippet, question) }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4);
+  }
+
+  function splitIntoSnippets(content) {
+    return content
+      .split(/\n{2,}|(?=^#\s+)/m)
+      .map((part) => part.replace(/^#+\s*/gm, "").replace(/\s+/g, " ").trim())
+      .filter((part) => part.length >= 12)
+      .map((part) => (part.length > 180 ? `${part.slice(0, 180)}...` : part));
+  }
+
+  function scoreText(textValue, question) {
+    const textLower = String(textValue || "").toLowerCase();
+    const terms = extractQueryTerms(question);
+    return terms.reduce((score, term) => {
+      if (!term) return score;
+      if (textLower.includes(term)) return score + Math.min(term.length, 8);
+      return score;
+    }, 0);
+  }
+
+  function extractQueryTerms(question) {
+    const normalized = String(question || "").toLowerCase();
+    const asciiTerms = normalized.match(/[a-z0-9]+/g) || [];
+    const chineseText = (normalized.match(/[\u4e00-\u9fa5]+/g) || []).join("");
+    const chineseTerms = [];
+    for (let size of [4, 3, 2]) {
+      for (let index = 0; index <= chineseText.length - size; index += 1) {
+        chineseTerms.push(chineseText.slice(index, index + size));
+      }
+    }
+    return Array.from(new Set([...asciiTerms, ...chineseTerms])).filter((term) => term.length >= 2);
   }
 
   function bindEvents() {

@@ -15,6 +15,8 @@
 - `styles.css`：视觉样式、响应式布局、首页排版、AI 简历助手样式。
 - `app.js`：页面数据渲染、语言切换、联系弹层、AI 简历助手交互。
 - `profile-data.js`：主要可编辑内容，包括个人信息、工作经历、教育背景、助手问题和回答。
+- `knowledge-base.js`：由 `AI简历助手知识库/*.txt` 生成的静态 RAG 知识库，供前端简历助手检索。
+- `AI简历助手知识库/`：RAG 源文档目录，维护项目复盘、职业定位和高频问答。
 - `assets/avatar.jpg`：关于我模块头像。
 - `assets/hero-photo.jpg`：首页人物照片。
 - `assets/resume.pdf`：简历下载文件。用户提供 PDF 后应放在这个路径。
@@ -91,7 +93,7 @@ D:\Programs\GitHubCLI\gh.exe
 
 第一阶段：静态知识库增强
 
-- 新增 `knowledge-base.js` 或 `knowledge-base.json`。
+- 使用 `AI简历助手知识库/` 作为源文档目录，并生成 `knowledge-base.js`。
 - 把简历、项目经历、项目复盘、常见面试问题拆成结构化知识片段。
 - 前端根据问题进行文本检索和片段匹配。
 - 仍然不接入大模型，保持 GitHub Pages 可直接运行。
