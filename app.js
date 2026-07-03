@@ -244,16 +244,162 @@
 
     if (!bestSnippets.length) return "";
 
-    const answerLines = bestSnippets.map((snippet) => `- ${snippet.text}`);
-    const sources = scoredDocs.map((item) => item.doc.title).join("、");
+    return composeKnowledgeAnswer(question, scoredDocs, bestSnippets);
+  }
 
-    return [
-      "我从简历助手知识库里检索到以下相关信息：",
-      "",
-      ...answerLines,
-      "",
-      `依据来源：${sources}`,
-    ].join("\n");
+  function composeKnowledgeAnswer(question, scoredDocs, bestSnippets) {
+    const intent = inferQuestionIntent(question, scoredDocs);
+    const relevantDocs = scoredDocs.filter((item) => describeKnowledgeDoc(item.doc, intent));
+    const answerDocs = relevantDocs.length ? relevantDocs : scoredDocs;
+    const sources = answerDocs.map((item) => item.doc.title).filter(Boolean).join("、");
+    const takeaways = buildTakeaways(question, answerDocs, bestSnippets, intent);
+    const metrics = extractMetrics(bestSnippets);
+    const lines = [buildSummaryLine(intent, answerDocs)];
+
+    if (takeaways.length) {
+      lines.push("", "可以这样理解：");
+      takeaways.slice(0, 3).forEach((item) => lines.push(`- ${item}`));
+    }
+
+    if (metrics.length) {
+      lines.push("", "可量化信息：");
+      metrics.slice(0, 3).forEach((item) => lines.push(`- ${item}`));
+    }
+
+    if (sources) lines.push("", `依据来源：${sources}`);
+    return lines.join("\n");
+  }
+
+  function inferQuestionIntent(question, scoredDocs) {
+    const questionText = String(question || "").toLowerCase();
+    if (/ai|agent|prompt|rag|大模型|智能体|简历助手/.test(questionText)) return "ai";
+    if (/项目|案例|做过|经历|经验/.test(questionText)) return "project";
+    if (/优势|能力|擅长|强项|特长/.test(questionText)) return "strength";
+    if (/数据|效果|结果|指标|增长|转化/.test(questionText)) return "metric";
+    if (/定位|介绍|是谁|背景/.test(questionText)) return "positioning";
+    return "general";
+  }
+
+  function buildSummaryLine(intent, scoredDocs) {
+    const mainTitle = scoredDocs[0]?.doc?.title || "当前知识库";
+    const templates = {
+      ai: `有相关经验。根据知识库，曹曦在 ${mainTitle} 中体现了 AI 产品与工具化落地的经验。`,
+      project: `有可以展开说明的项目经验。最相关的材料来自 ${mainTitle}。`,
+      strength: "从材料看，她的优势更偏向产品规划、跨团队推进和基于数据的业务判断。",
+      metric: "知识库里有一些可量化的业务结果，可以作为评估她项目产出的参考。",
+      positioning: "曹曦是偏业务增长、会员运营和产品规划的产品经理。",
+      general: "我找到了与这个问题相关的材料，可以概括为以下几方面。",
+    };
+    return templates[intent] || templates.general;
+  }
+
+  function buildTakeaways(question, scoredDocs, snippets, intent) {
+    const docTakeaways = scoredDocs
+      .map((item) => describeKnowledgeDoc(item.doc, intent))
+      .filter(Boolean);
+    if (docTakeaways.length) return uniqueByNormalized(docTakeaways).slice(0, 3);
+
+    const snippetTakeaways = snippets
+      .map((snippet) => cleanSnippetText(snippet.text))
+      .flatMap((textValue) => textValue.split(/[;；。]/))
+      .map((line) => line.replace(/^[-*\d.、\s]+/, "").trim())
+      .map(normalizeNarration)
+      .filter((line) => line.length >= 8)
+      .sort((a, b) => scoreText(b, question) - scoreText(a, question));
+
+    return uniqueByNormalized([...docTakeaways, ...snippetTakeaways])
+      .slice(0, 3)
+      .map((line) => rewriteTakeaway(line, intent));
+  }
+
+  function describeKnowledgeDoc(doc, intent) {
+    const title = doc?.title || "";
+    const textValue = `${title} ${(doc?.keywords || []).join(" ")}`;
+    if (intent === "ai" && !/AI|简历网站|RAG|Agent/i.test(textValue)) return "";
+    if (intent === "strength" && !/高频问题|常见问题|职业定位/.test(textValue)) return "";
+    if ((intent === "project" || intent === "metric") && /AI|简历网站|RAG|Agent/i.test(textValue)) return "";
+    if (/高频问题|常见问题/.test(textValue)) {
+      return "她的核心优势可以概括为商家中后台经验、复杂业务抽象、0-1 标准化建设，以及对结果指标的关注。";
+    }
+    if (/职业定位/.test(textValue)) {
+      return "她更适合业务增长、会员运营、SaaS 中后台和商家服务方向的产品经理岗位。";
+    }
+    if (/AI|简历网站|RAG|Agent/i.test(textValue)) {
+      return "她把个人求职主页设计成可交互的 AI 简历产品，并规划用 RAG 知识库补足传统简历难以展开的项目细节。";
+    }
+    if (/多平台|券|优惠券|抖音|美团|快手|支付宝/.test(textValue)) {
+      return "她做过多平台券营销相关项目，重点是把外部流量渠道接入、券规则、核销和售后链路沉淀成可复用的产品能力。";
+    }
+    if (/付费会员/.test(textValue)) {
+      return "她做过付费会员相关项目，围绕拉新转化、权益感知、存量挖潜和商家标准化配置来提升会员经营能力。";
+    }
+    if (/精细化|标签|会员/.test(textValue)) {
+      return "她做过会员精细化运营升级，关注会员标签、分层运营、成长规则和运营效率提升。";
+    }
+    if (/SOP|班主任/.test(textValue)) {
+      return "她做过班主任 SOP 线上化项目，把线下服务流程沉淀为可跟踪、可执行、可复用的系统流程。";
+    }
+    if (/问卷/.test(textValue)) {
+      return "她做过问卷平台相关项目，偏 0-1 产品建设和内部业务工具标准化。";
+    }
+    return "";
+  }
+
+  function rewriteTakeaway(textValue, intent) {
+    const line = limitSentence(textValue);
+    if (/^(她|曹曦)/.test(line)) return line;
+    if (/^(这个|该|项目|网站|平台)/.test(line)) return line;
+    if (intent === "project" || intent === "ai") return `她在相关项目中${line.replace(/^[：:]\s*/, "")}`;
+    if (intent === "metric") return `这一结果体现为${line.replace(/^[：:]\s*/, "")}`;
+    if (intent === "strength") return `她的能力体现在${line.replace(/^[：:]\s*/, "")}`;
+    return line;
+  }
+
+  function extractMetrics(snippets) {
+    const metricPattern = /[^。；;\n]{0,18}\d+(?:\.\d+)?\s*(?:w\+|W\+|万\+|万|%|分钟|min|份|个月|家|次|人|\+)[^。；;\n]{0,18}/g;
+    const matches = snippets.flatMap((snippet) => cleanSnippetText(snippet.text).match(metricPattern) || []);
+    return uniqueByNormalized(matches.map((item) => limitSentence(item.trim()))).slice(0, 4);
+  }
+
+  function cleanSnippetText(textValue) {
+    return String(textValue || "")
+      .replace(/^#+\s*/gm, "")
+      .replace(/^(Q|A|问|答)[：:]\s*/gim, "")
+      .replace(/^[^-。；：:]{2,40}\s*-\s*[^。；：:]{2,24}[：:\s]*/, "")
+      .replace(/^(项目名称|项目背景|项目动机|产品设计思路|核心职责|核心能力|项目成果|业务目标|解决方案|我的角色|个人定位)[：:\s]*/, "")
+      .replace(/\*\*/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function normalizeNarration(textValue) {
+    return String(textValue || "")
+      .replace(/^(因此|所以)[，,]?\s*/, "")
+      .replace(/\bHR\b/gi, "招聘方")
+      .replace(/我的/g, "曹曦的")
+      .replace(/我会/g, "她会")
+      .replace(/我做/g, "她做")
+      .replace(/我负责/g, "她负责")
+      .replace(/我参与/g, "她参与")
+      .replace(/我是/g, "她是")
+      .replace(/我/g, "曹曦")
+      .trim();
+  }
+
+  function uniqueByNormalized(items) {
+    const seen = new Set();
+    return items.filter((item) => {
+      const key = String(item || "").replace(/\s+/g, "").replace(/[，。；、,.]/g, "");
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function limitSentence(textValue) {
+    const textString = String(textValue || "").trim();
+    if (textString.length <= 72) return textString;
+    return `${textString.slice(0, 72)}...`;
   }
 
   function rankSnippets(doc, question) {
