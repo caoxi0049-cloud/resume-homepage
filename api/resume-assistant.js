@@ -1,8 +1,9 @@
 const fs = require("fs");
 const path = require("path");
 
-const OPENAI_API_URL = "https://api.openai.com/v1/responses";
-const DEFAULT_MODEL = "gpt-4.1-mini";
+const DEFAULT_PROVIDER = "deepseek";
+const DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash";
+const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
 
 module.exports = async function handler(request, response) {
   setCorsHeaders(response);
@@ -17,18 +18,20 @@ module.exports = async function handler(request, response) {
     return;
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    response.status(500).json({ error: "OPENAI_API_KEY is not configured" });
-    return;
-  }
-
   try {
     const body = typeof request.body === "string" ? JSON.parse(request.body || "{}") : request.body || {};
     const question = String(body.question || "").trim();
 
     if (!question) {
       response.status(400).json({ error: "Question is required" });
+      return;
+    }
+
+    const modelConfig = getModelConfig();
+    if (!modelConfig.apiKey) {
+      response.status(500).json({
+        error: `${modelConfig.apiKeyName} is not configured`,
+      });
       return;
     }
 
@@ -43,55 +46,83 @@ module.exports = async function handler(request, response) {
       return;
     }
 
-    const context = matches
-      .map((item, index) => {
-        return [
-          `资料 ${index + 1}: ${item.title}`,
-          `关键词: ${(item.keywords || []).join("、")}`,
-          `内容: ${item.snippet}`,
-        ].join("\n");
-      })
-      .join("\n\n");
-
-    const openaiResponse = await fetch(OPENAI_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
-        input: [
-          {
-            role: "system",
-            content:
-              "你是曹曦个人求职主页里的 AI 简历助手。你只能基于提供的知识库资料回答，不要编造未出现的公司、数据、项目或经历。回答要像一位专业招聘沟通助手：自然、精炼、有判断。不要直接复制知识库原文。若资料不足，要明确说明资料未覆盖，并建议电话或邮箱联系。输出中文，控制在 180 字以内；必要时用 2-3 个短要点。",
-          },
-          {
-            role: "user",
-            content: `问题：${question}\n\n可用资料：\n${context}`,
-          },
-        ],
-      }),
-    });
-
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      response.status(502).json({ error: "Model request failed", detail: errorText.slice(0, 500) });
-      return;
-    }
-
-    const result = await openaiResponse.json();
-    const answer = extractResponseText(result);
+    const answer = await generateAnswer(modelConfig, question, matches);
 
     response.status(200).json({
       answer: answer || "我找到了相关资料，但暂时没有生成出稳定回答。建议换一种问法再试一次。",
       sources: matches.map((item) => item.title),
+      provider: modelConfig.provider,
+      model: modelConfig.model,
     });
   } catch (error) {
     response.status(500).json({ error: "Resume assistant failed", detail: error.message });
   }
 };
+
+function getModelConfig() {
+  const provider = String(process.env.LLM_PROVIDER || DEFAULT_PROVIDER).toLowerCase();
+
+  if (provider === "openai") {
+    return {
+      provider,
+      apiKeyName: "OPENAI_API_KEY",
+      apiKey: process.env.OPENAI_API_KEY,
+      endpoint: process.env.OPENAI_API_URL || "https://api.openai.com/v1/chat/completions",
+      model: process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL,
+    };
+  }
+
+  return {
+    provider: "deepseek",
+    apiKeyName: "DEEPSEEK_API_KEY",
+    apiKey: process.env.DEEPSEEK_API_KEY,
+    endpoint: process.env.DEEPSEEK_API_URL || "https://api.deepseek.com/chat/completions",
+    model: process.env.DEEPSEEK_MODEL || DEFAULT_DEEPSEEK_MODEL,
+  };
+}
+
+async function generateAnswer(modelConfig, question, matches) {
+  const context = matches
+    .map((item, index) => {
+      return [
+        `资料 ${index + 1}: ${item.title}`,
+        `关键词: ${(item.keywords || []).join("、")}`,
+        `内容: ${item.snippet}`,
+      ].join("\n");
+    })
+    .join("\n\n");
+
+  const modelResponse = await fetch(modelConfig.endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${modelConfig.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: modelConfig.model,
+      messages: [
+        {
+          role: "system",
+          content:
+            "你是曹曦个人求职主页里的 AI 简历助手。你只能基于提供的知识库资料回答，不要编造未出现的公司、数据、项目或经历。回答要像一位专业招聘沟通助手：自然、精炼、有判断。不要直接复制知识库原文。若资料不足，要明确说明资料未覆盖，并建议电话或邮箱联系。输出中文，控制在 180 字以内；必要时用 2-3 个短要点。",
+        },
+        {
+          role: "user",
+          content: `问题：${question}\n\n可用资料：\n${context}`,
+        },
+      ],
+      stream: false,
+    }),
+  });
+
+  if (!modelResponse.ok) {
+    const errorText = await modelResponse.text();
+    throw new Error(`Model request failed: ${errorText.slice(0, 500)}`);
+  }
+
+  const result = await modelResponse.json();
+  return extractChatCompletionText(result);
+}
 
 function setCorsHeaders(response) {
   response.setHeader("Access-Control-Allow-Origin", process.env.ALLOWED_ORIGIN || "*");
@@ -161,13 +192,6 @@ function extractQueryTerms(question) {
   return Array.from(new Set([...asciiTerms, ...chineseTerms])).filter((term) => term.length >= 2);
 }
 
-function extractResponseText(result) {
-  if (typeof result.output_text === "string") return result.output_text.trim();
-
-  const output = Array.isArray(result.output) ? result.output : [];
-  return output
-    .flatMap((item) => item.content || [])
-    .map((content) => content.text || "")
-    .join("")
-    .trim();
+function extractChatCompletionText(result) {
+  return String(result?.choices?.[0]?.message?.content || "").trim();
 }
