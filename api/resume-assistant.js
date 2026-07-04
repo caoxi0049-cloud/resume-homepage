@@ -148,8 +148,9 @@ function retrieveKnowledge(question, knowledgeBase, limit) {
   return knowledgeBase
     .map((doc) => {
       const snippets = splitIntoSnippets(doc.content || "");
+      const intentBoost = scoreIntent(doc, question);
       const bestSnippet = snippets
-        .map((snippet) => ({ snippet, score: scoreText(`${doc.title} ${(doc.keywords || []).join(" ")} ${snippet}`, question) }))
+        .map((snippet) => ({ snippet, score: scoreText(`${doc.title} ${(doc.keywords || []).join(" ")} ${snippet}`, question) + intentBoost }))
         .sort((a, b) => b.score - a.score)[0];
 
       return {
@@ -162,6 +163,19 @@ function retrieveKnowledge(question, knowledgeBase, limit) {
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
+}
+
+function scoreIntent(doc, question) {
+  const text = `${doc.title} ${(doc.keywords || []).join(" ")}`;
+  const q = String(question || "").toLowerCase();
+  let score = 0;
+
+  if (/优势|能力|擅长|强项|产品方向|适合|定位|介绍/.test(q) && /高频问题|职业定位/.test(text)) score += 18;
+  if (/ai|agent|rag|大模型|智能体|简历助手/i.test(q) && /AI|简历网站|高频问题/i.test(text)) score += 18;
+  if (/增长|会员|营销|付费|转化/.test(q) && /会员|付费会员|精细化|高频问题/.test(text)) score += 14;
+  if (/项目|案例|做过|经历|经验/.test(q) && /项目知识库|高频问题/.test(text)) score += 10;
+
+  return score;
 }
 
 function splitIntoSnippets(content) {
