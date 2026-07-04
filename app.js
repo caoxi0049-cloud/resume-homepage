@@ -208,7 +208,7 @@
     if (!cleanQuestion) return;
 
     state.messages.push({ from: "user", content: cleanQuestion });
-    state.messages.push({ from: "assistant", content: "正在结合知识库生成回答..." });
+    state.messages.push({ from: "assistant", content: "我正在翻一翻项目资料，马上组织成一段好读的回答..." });
     renderAssistant(false);
 
     const backendAnswer = await askBackendAssistant(cleanQuestion);
@@ -248,11 +248,8 @@
 
       const result = await response.json();
       const answer = String(result.answer || "").trim();
-      const sources = Array.isArray(result.sources) ? result.sources.filter(Boolean) : [];
-
       if (!answer) return "";
-      if (!sources.length) return answer;
-      return `${answer}\n\n依据来源：${sources.slice(0, 3).join("、")}`;
+      return answer;
     } catch (error) {
       return "";
     }
@@ -287,7 +284,6 @@
     const intent = inferQuestionIntent(question, scoredDocs);
     const relevantDocs = scoredDocs.filter((item) => describeKnowledgeDoc(item.doc, intent));
     const answerDocs = relevantDocs.length ? relevantDocs : scoredDocs;
-    const sources = answerDocs.map((item) => item.doc.title).filter(Boolean).join("、");
     const takeaways = buildTakeaways(question, answerDocs, bestSnippets, intent);
     const metrics = extractMetrics(bestSnippets);
     const lines = [buildSummaryLine(intent, answerDocs)];
@@ -302,7 +298,6 @@
       metrics.slice(0, 3).forEach((item) => lines.push(`- ${item}`));
     }
 
-    if (sources) lines.push("", `依据来源：${sources}`);
     return lines.join("\n");
   }
 

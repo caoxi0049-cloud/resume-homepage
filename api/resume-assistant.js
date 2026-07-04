@@ -38,13 +38,13 @@ module.exports = async function handler(request, response) {
 
     if (!matches.length) {
       response.status(200).json({
-        answer: "当前资料中还没有覆盖这个问题。你可以通过电话 18291980049 或邮箱 caoxi4929@qq.com 进一步联系曹曦确认。",
+        answer: "我目前的资料里还没有覆盖这个问题。你可以通过电话 18291980049 或邮箱 caoxi4929@qq.com 进一步联系我确认。",
         sources: [],
       });
       return;
     }
 
-    const answer = await generateAnswer(modelConfig, question, matches);
+    const answer = sanitizeAnswer(await generateAnswer(modelConfig, question, matches));
 
     response.status(200).json({
       answer: answer || "我找到了相关资料，但暂时没有生成出稳定回答。建议换一种问法再试一次。",
@@ -102,7 +102,7 @@ async function generateAnswer(modelConfig, question, matches) {
         {
           role: "system",
           content:
-            "你是曹曦个人求职主页里的 AI 简历助手。你只能基于提供的知识库资料回答，不要编造未出现的公司、数据、项目或经历。回答要像一位专业招聘沟通助手：自然、精炼、有判断。不要直接复制知识库原文。若资料不足，要明确说明资料未覆盖，并建议电话或邮箱联系。输出中文，控制在 180 字以内；必要时用 2-3 个短要点。",
+            "你是个人求职主页里的 AI 简历助手，但回答时必须模拟候选人本人第一人称作答。所有回答统一使用“我负责”“我参与”“我擅长”“我的经验”等表达，不要出现“曹曦”“她”“该候选人”等第三人称称呼。你只能基于提供的知识库资料回答，不要编造未出现的公司、数据、项目或经历。回答风格要相对书面化、专业、克制，适合招聘者或面试官阅读。不要直接复制知识库原文，而要归纳为自然段或简洁条目。不要输出 Markdown 标记或标题符号，例如 #、*、**、-、>。不要标注资料来源。若资料不足，要明确说明“我目前的资料中未覆盖”，并建议通过电话或邮箱进一步沟通。输出中文，控制在 220 字以内。",
         },
         {
           role: "user",
@@ -199,4 +199,15 @@ function extractQueryTerms(question) {
 
 function extractChatCompletionText(result) {
   return String(result?.choices?.[0]?.message?.content || "").trim();
+}
+
+function sanitizeAnswer(answer) {
+  return String(answer || "")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/\*\*/g, "")
+    .replace(/^\s*[-*>]\s*/gm, "")
+    .replace(/曹曦/g, "我")
+    .replace(/她(?=负责|参与|主导|擅长|具备|有|在|通过|曾|可以|能够|的)/g, "我")
+    .replace(/该候选人/g, "我")
+    .trim();
 }
