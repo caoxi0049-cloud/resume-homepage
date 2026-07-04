@@ -5,6 +5,9 @@
 [functions]
   node_bundler = "esbuild"
 
+[functions."resume-assistant"]
+  included_files = ["knowledge-base.js", "api/resume-assistant.js"]
+
 [[redirects]]
   from = "/api/resume-assistant"
   to = "/.netlify/functions/resume-assistant"

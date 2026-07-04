@@ -29,9 +29,7 @@ module.exports = async function handler(request, response) {
 
     const modelConfig = getModelConfig();
     if (!modelConfig.apiKey) {
-      response.status(500).json({
-        error: `${modelConfig.apiKeyName} is not configured`,
-      });
+      response.status(500).json({ error: `${modelConfig.apiKeyName} is not configured` });
       return;
     }
 
@@ -131,7 +129,14 @@ function setCorsHeaders(response) {
 }
 
 function loadKnowledgeBase() {
-  const filePath = path.join(process.cwd(), "knowledge-base.js");
+  const candidates = [
+    path.join(process.cwd(), "knowledge-base.js"),
+    path.join(__dirname, "knowledge-base.js"),
+    path.join(__dirname, "../../knowledge-base.js"),
+  ];
+  const filePath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!filePath) throw new Error("knowledge-base.js was not found");
+
   const raw = fs.readFileSync(filePath, "utf8");
   const jsonText = raw
     .replace(/^window\.resumeKnowledgeBase\s*=\s*/, "")
