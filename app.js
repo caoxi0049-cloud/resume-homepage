@@ -36,9 +36,6 @@
     setText('[data-field="phone"]', basics.phone);
     setText('[data-field="footerName"]', `${basics.name} · ${text(basics.title)}`);
     setText('[data-field="footerContact"]', `${basics.phone} · ${basics.email}`);
-    setText('[data-field="aboutIntro"]', text(data.about?.intro));
-    setText('[data-field="aboutDetail"]', text(data.about?.detail));
-
     $$("[data-i18n]").forEach((node) => {
       node.textContent = data.labels?.[state.language]?.[node.dataset.i18n] || node.textContent;
     });
@@ -64,7 +61,7 @@
     setupImage('[data-field="avatarSmall"]', ".mini-fallback", basics.avatar);
 
     renderCompanyStrip();
-    renderTags();
+    renderAboutCards();
     renderExperiences();
     renderEducation();
     renderAssistant(true);
@@ -75,6 +72,10 @@
     $$(selector).forEach((node) => {
       node.textContent = value || "";
     });
+  }
+
+  function label(key) {
+    return data.labels?.[state.language]?.[key] || key;
   }
 
   function setupImage(imageSelector, fallbackSelector, src) {
@@ -98,10 +99,21 @@
     target.innerHTML = (data.companyStrip || []).map((item) => `<strong>${escapeHtml(item)}</strong>`).join("");
   }
 
-  function renderTags() {
-    const target = $('[data-list="abilityTags"]');
+  function renderAboutCards() {
+    const target = $('[data-list="aboutCards"]');
     if (!target) return;
-    target.innerHTML = (data.about?.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("");
+    target.innerHTML = (data.about?.cards || [])
+      .map(
+        (card, index) => `
+          <article class="about-card">
+            <span class="about-card-index">${String(index + 1).padStart(2, "0")}</span>
+            <h3>${escapeHtml(text(card.title))}</h3>
+            <p class="about-card-subtitle">${escapeHtml(text(card.subtitle))}</p>
+            <p class="about-card-detail">${escapeHtml(text(card.detail))}</p>
+          </article>
+        `
+      )
+      .join("");
   }
 
   function renderExperiences() {
@@ -113,24 +125,67 @@
           <article class="timeline-item">
             <div class="timeline-date">${escapeHtml(item.period)}</div>
             <div class="timeline-marker" aria-hidden="true"></div>
-            <div class="company-logo">
-              <img src="${escapeHtml(item.logo)}" alt="${escapeHtml(item.company)} Logo" />
-              <span>${escapeHtml(item.logoText || "PM")}</span>
-            </div>
             <div class="timeline-content">
-              <div class="job-line">
-                <div>
-                  <h3>${escapeHtml(text(item.role))}</h3>
-                  <p>${escapeHtml(item.company)}</p>
+              <div class="experience-card-header">
+                <div class="company-logo">
+                  <img src="${escapeHtml(item.logo)}" alt="${escapeHtml(item.company)} Logo" />
+                  <span>${escapeHtml(item.logoText || "PM")}</span>
                 </div>
-                <span>${escapeHtml(text(item.location))}</span>
+                <div class="job-line">
+                  <div>
+                    <h3>${escapeHtml(text(item.role))}</h3>
+                    <p>${escapeHtml(item.company)}</p>
+                  </div>
+                  <span>${escapeHtml(item.period)}｜${escapeHtml(text(item.domain) || text(item.location))}</span>
+                </div>
               </div>
-              <h4>Key Responsibilities</h4>
-              <ul>
-                ${(item.responsibilities || []).map((line) => `<li>${escapeHtml(text(line))}</li>`).join("")}
-              </ul>
-              <h4>Project Highlight</h4>
-              <p>${escapeHtml(text(item.highlight))}</p>
+              <h4>角色定位</h4>
+              <div class="role-summary">
+                <p>${escapeHtml(text(item.roleSummary))}</p>
+              </div>
+              ${
+                (item.achievements || []).length
+                  ? `
+                    <h4>${escapeHtml(label("experience.achievements"))}</h4>
+                    <div class="achievement-grid">
+                      ${(item.achievements || [])
+                        .map(
+                          (achievement, index) => `
+                            <article class="achievement-card">
+                              <span>${String(index + 1).padStart(2, "0")}</span>
+                              <h5>${escapeHtml(text(achievement.title))}</h5>
+                              <p>${escapeHtml(text(achievement.detail))}</p>
+                            </article>
+                          `
+                        )
+                        .join("")}
+                    </div>
+                  `
+                  : ""
+              }
+              <h4>${escapeHtml(label("experience.projects"))}</h4>
+              <div class="project-list">
+                ${(item.projects || [])
+                  .map(
+                    (project) => `
+                      <section class="project-card">
+                        <div class="project-title-line">
+                          <h5>${escapeHtml(text(project.name))}</h5>
+                          <div class="project-keywords">
+                            ${(project.keywords || []).map((keyword) => `<span>${escapeHtml(keyword)}</span>`).join("")}
+                          </div>
+                        </div>
+                        <div class="project-detail-grid">
+                          ${renderProjectDetail("项目定位", project.positioning)}
+                          ${renderProjectDetail("负责什么", project.ownership)}
+                          ${renderProjectDetail("产品亮点", project.highlight)}
+                          ${text(project.result) ? renderProjectDetail("结果", project.result) : ""}
+                        </div>
+                      </section>
+                    `
+                  )
+                  .join("")}
+              </div>
             </div>
           </article>
         `
@@ -140,6 +195,17 @@
     $$(".company-logo img").forEach((image) => {
       image.onerror = () => image.classList.add("is-hidden");
     });
+  }
+
+  function renderProjectDetail(title, value) {
+    const content = text(value);
+    if (!content) return "";
+    return `
+      <div class="project-detail">
+        <strong>${escapeHtml(title)}</strong>
+        <p>${escapeHtml(content)}</p>
+      </div>
+    `;
   }
 
   function renderEducation() {
@@ -157,12 +223,12 @@
             <div class="education-content">
               <div class="job-line">
                 <div>
-                  <h3>${escapeHtml(text(item.degree))}</h3>
-                  <p>${escapeHtml(item.school)}</p>
+                  <h3>${escapeHtml(item.school)}</h3>
+                  <p>${escapeHtml(`${text(item.major)} · ${text(item.degree)}`)}</p>
                 </div>
                 <span>${escapeHtml(text(item.location))}</span>
               </div>
-              <p>${escapeHtml(text(item.detail))}</p>
+              ${text(item.detail) ? `<p>${escapeHtml(text(item.detail))}</p>` : ""}
             </div>
           </article>
         `
@@ -493,23 +559,11 @@
     });
 
     $$('[data-field="resumeLink"], [data-field="aboutResumeLink"]').forEach((link) => {
-      link.addEventListener("click", async (event) => {
+      link.addEventListener("click", (event) => {
         const href = link.getAttribute("href");
         if (!href || href === "#") {
           event.preventDefault();
           alert(state.language === "zh" ? "请先把 PDF 简历放到 assets/resume.pdf" : "Please add the resume PDF to assets/resume.pdf first.");
-          return;
-        }
-        try {
-          const response = await fetch(href, { method: "HEAD" });
-          if (!response.ok) {
-            event.preventDefault();
-            alert(state.language === "zh" ? "简历文件暂未找到，请将 PDF 放到 assets/resume.pdf" : "Resume file was not found. Please place the PDF at assets/resume.pdf.");
-          }
-        } catch (error) {
-          if (location.protocol !== "file:") return;
-          event.preventDefault();
-          alert(state.language === "zh" ? "本地预览时请确认 assets/resume.pdf 已存在，或把 PDF 文件发给我放入项目。" : "Please make sure assets/resume.pdf exists, or send me the PDF to add it to the project.");
         }
       });
     });

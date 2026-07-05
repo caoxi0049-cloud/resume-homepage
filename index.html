@@ -3,26 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Career Homepage | Product Manager</title>
-    <meta name="description" content="Personal career homepage with resume assistant." />
+    <title>个人求职主页 | 产品经理</title>
+    <meta name="description" content="曹曦的个人求职主页，聚焦 CRM、会员营销、SaaS 与中后台产品经验。" />
+    <link rel="preload" as="image" href="assets/avatar.jpg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="site-header" aria-label="Site navigation">
       <a class="brand-logo" href="#home" aria-label="Home">
-        <span class="brand-text" data-field="brandName">Bingo</span><span class="brand-dot">.</span>
+        <span class="brand-text" data-field="brandName">Cao Xi</span><span class="brand-dot">.</span>
       </a>
       <nav class="top-nav" aria-label="Primary navigation">
-        <a href="#home" class="nav-link is-active" data-i18n="nav.home">Home</a>
-        <a href="#about" class="nav-link" data-i18n="nav.about">About</a>
-        <a href="#experience" class="nav-link" data-i18n="nav.experience">Experience</a>
-        <a href="#education" class="nav-link" data-i18n="nav.education">Education</a>
+        <a href="#home" class="nav-link is-active" data-i18n="nav.home">首页</a>
+        <a href="#about" class="nav-link" data-i18n="nav.about">关于我</a>
+        <a href="#experience" class="nav-link" data-i18n="nav.experience">工作经历</a>
+        <a href="#education" class="nav-link" data-i18n="nav.education">教育背景</a>
       </nav>
       <div class="header-actions">
         <button class="icon-button" type="button" data-action="toggle-theme" aria-label="Toggle theme">☼</button>
         <button class="language-toggle" type="button" data-action="toggle-language">EN</button>
-        <a class="email-pill" data-field="emailLink" href="mailto:hello@example.com">
-          <span data-field="email">hello@example.com</span>
+        <a class="email-pill" data-field="emailLink" href="mailto:caoxi4929@qq.com">
+          <span data-field="email">caoxi4929@qq.com</span>
         </a>
       </div>
     </header>
@@ -30,74 +31,61 @@
     <main>
       <section id="home" class="hero" aria-labelledby="hero-name">
         <div class="hero-copy">
-          <p class="hello-line" data-field="heroGreeting">Hi, I am Bingo</p>
-          <h1 id="hero-name" class="hero-role" data-field="title">Product Manager</h1>
+          <p class="hello-line" data-field="heroGreeting">👋 你好，我是曹曦</p>
+          <h1 id="hero-name" class="hero-role" data-field="title">产品经理</h1>
           <p class="hero-outline" data-field="heroOutline">PRODUCT MANAGER</p>
           <p class="hero-statement" data-field="statement">
-            Product thinking meets AI execution.
+            5年产品经验，长期深耕 CRM、会员营销与数据运营场景。擅长将复杂业务流程抽象为可配置、可复用、可规模化的产品能力，推动产品从 0-1 建设到持续增长。
           </p>
           <div class="hero-actions">
             <a class="primary-action" data-field="resumeLink" href="assets/resume.pdf" download="曹曦_18291980049_产品经理.pdf">
-              <span class="download-icon">↓</span>
-              <span data-i18n="actions.download">Download Resume</span>
+              <span data-i18n="actions.download">下载简历</span>
             </a>
             <button class="secondary-action" type="button" data-action="toggle-contact">
-              <span data-i18n="actions.contact">Contact Me</span>
+              <span data-i18n="actions.contact">联系我</span>
             </button>
+            <aside class="contact-panel" data-state="closed" aria-label="Contact options">
+              <button class="contact-close" type="button" data-action="toggle-contact" aria-label="Close contact options">×</button>
+              <a data-field="phoneLink" href="tel:18291980049">
+                <span data-i18n="contact.phone">电话</span>
+                <strong data-field="phone">18291980049</strong>
+              </a>
+              <a data-field="emailLink" href="mailto:caoxi4929@qq.com">
+                <span data-i18n="contact.email">邮箱</span>
+                <strong data-field="email">caoxi4929@qq.com</strong>
+              </a>
+            </aside>
           </div>
           <div class="company-strip">
-            <span data-i18n="home.current">Currently exploring at</span>
+            <span data-i18n="home.current">曾就职</span>
             <div data-list="companyStrip"></div>
           </div>
         </div>
         <aside class="hero-portrait" aria-label="Profile photo">
-          <img data-field="avatar" src="assets/avatar.jpg" alt="Profile photo" />
-          <div class="portrait-fallback" data-field="initials">PM</div>
+          <img data-field="avatar" src="assets/avatar.jpg" alt="Profile photo" fetchpriority="high" />
+          <div class="portrait-fallback" data-field="initials">CX</div>
         </aside>
         <a class="scroll-cue" href="#about" aria-label="Scroll to About">⌄<span>SCROLL</span></a>
       </section>
 
       <section id="about" class="content-section about-section" aria-labelledby="about-title" data-ghost="ABOUT">
         <div class="section-index">01</div>
-        <h2 id="about-title" data-i18n="sections.about">About Me</h2>
-        <div class="about-grid">
-          <div class="about-photo">
-            <img data-field="avatarSmall" src="assets/avatar.jpg" alt="Profile portrait" />
-            <div class="mini-fallback" data-field="initials">PM</div>
-          </div>
-          <div class="about-copy">
-            <p class="lead" data-field="aboutIntro"></p>
-            <p data-field="aboutDetail"></p>
-            <div class="tag-cloud" data-list="abilityTags"></div>
-          </div>
-        </div>
+        <h2 id="about-title" data-i18n="sections.about">关于我</h2>
+        <div class="about-card-grid" data-list="aboutCards"></div>
       </section>
 
       <section id="experience" class="content-section experience-section" aria-labelledby="experience-title" data-ghost="EXPERIENCE">
         <div class="section-index">02</div>
-        <h2 id="experience-title" data-i18n="sections.experience">Experience</h2>
+        <h2 id="experience-title" data-i18n="sections.experience">工作经历</h2>
         <div class="timeline" data-list="experiences"></div>
       </section>
 
       <section id="education" class="content-section education-section" aria-labelledby="education-title" data-ghost="EDUCATION">
         <div class="section-index">03</div>
-        <h2 id="education-title" data-i18n="sections.education">Education</h2>
+        <h2 id="education-title" data-i18n="sections.education">教育背景</h2>
         <div class="education-list" data-list="education"></div>
       </section>
     </main>
-
-    <aside class="contact-panel" data-state="closed" aria-label="Contact options">
-      <button class="contact-close" type="button" data-action="toggle-contact" aria-label="Close contact options">×</button>
-      <h2 data-i18n="contact.title">Contact Me</h2>
-      <a data-field="phoneLink" href="tel:18291980049">
-        <span data-i18n="contact.phone">Phone</span>
-        <strong data-field="phone">18291980049</strong>
-      </a>
-      <a data-field="emailLink" href="mailto:caoxi4929@qq.com">
-        <span data-i18n="contact.email">Email</span>
-        <strong data-field="email">caoxi4929@qq.com</strong>
-      </a>
-    </aside>
 
     <button class="assistant-launcher" type="button" data-action="toggle-assistant" aria-label="Open resume assistant">
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -114,22 +102,22 @@
       <div class="assistant-header">
         <div>
           <span class="assistant-spark">✦</span>
-          <h2 data-i18n="assistant.title">Resume Assistant</h2>
-          <p data-i18n="assistant.subtitle">Ask me anything about my experience.</p>
+          <h2 data-i18n="assistant.title">简历助手</h2>
+          <p data-i18n="assistant.subtitle">问我任何关于曹曦经历的问题！</p>
         </div>
         <button type="button" class="assistant-close" data-action="toggle-assistant" aria-label="Close resume assistant">×</button>
       </div>
       <div class="assistant-messages" data-list="assistantMessages"></div>
       <div class="assistant-prompts" data-list="assistantPrompts"></div>
       <form class="assistant-form" data-form="assistant">
-        <input type="text" name="question" autocomplete="off" data-i18n-placeholder="assistant.placeholder" placeholder="Ask something..." />
+        <input type="text" name="question" autocomplete="off" data-i18n-placeholder="assistant.placeholder" placeholder="试着问一个问题..." />
         <button type="submit" aria-label="Send">➤</button>
       </form>
     </aside>
 
     <footer class="site-footer">
-      <span data-field="footerName">Product Manager</span>
-      <span data-field="footerContact">hello@example.com</span>
+      <span data-field="footerName">曹曦 · 产品经理</span>
+      <span data-field="footerContact">18291980049 · caoxi4929@qq.com</span>
     </footer>
 
     <script src="knowledge-base.js"></script>
