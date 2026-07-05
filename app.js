@@ -133,8 +133,8 @@
                 </div>
                 <div class="job-line">
                   <div>
-                    <h3>${escapeHtml(text(item.role))}</h3>
-                    <p>${escapeHtml(item.company)}</p>
+                    <h3>${escapeHtml(item.company)}</h3>
+                    <p>${escapeHtml(text(item.role))}</p>
                   </div>
                   <span>${escapeHtml(item.period)}｜${escapeHtml(text(item.domain) || text(item.location))}</span>
                 </div>

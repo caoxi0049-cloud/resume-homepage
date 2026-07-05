@@ -146,7 +146,7 @@ window.profileData = {
   },
   experiences: [
     {
-      company: "多点生活（中国）网络科技有限公司",
+      company: "多点",
       location: {
         zh: "中国",
         en: "China",
