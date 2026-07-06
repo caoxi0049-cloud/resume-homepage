@@ -104,14 +104,14 @@ D:\Programs\nodejs\node.exe scripts\generate-knowledge-base.js
 - 在 `vercel.app` 上，会请求 `/api/resume-assistant`。
 - 在本地 `file://` 打开时，`apiEndpoint` 为空，不请求后端，改走前端本地知识库和兜底回答。
 - 线上用户每次通过后端 AI 助手提问，`api/resume-assistant.js` 都会输出一条结构化 JSON 日志，事件名为 `resume_assistant_interaction`，可在 Netlify Functions logs 中查看，用于复盘用户问题、回答质量、命中来源和后续知识库优化。
-- 如配置飞书环境变量，问答还会同步写入飞书多维表格「AI简历助手问答记录」：https://my.feishu.cn/base/IAWmbjn6AaFKjPs3EaycNqFvnih
+- 如配置飞书应用环境变量，问答还会同步写入飞书多维表格「AI简历助手问答记录-应用写入版」：https://my.feishu.cn/base/NXrPbAWwkaPT0UswkSbcNkbfnqd
 
 飞书问答记录环境变量：
 
 - `LARK_APP_ID`
 - `LARK_APP_SECRET`
-- `LARK_BASE_TOKEN=IAWmbjn6AaFKjPs3EaycNqFvnih`
-- `LARK_TABLE_ID=tbli9GeD8x6ajbcf`
+- `LARK_LOG_BASE_TOKEN=NXrPbAWwkaPT0UswkSbcNkbfnqd`（可选，代码已有默认值）
+- `LARK_LOG_TABLE_ID=tblnbDHOwmx3oevO`（可选，代码已有默认值）
 
 后端 RAG 逻辑：
 
