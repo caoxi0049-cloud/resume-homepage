@@ -4,6 +4,8 @@ const path = require("path");
 const DEFAULT_PROVIDER = "deepseek";
 const DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash";
 const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
+const DEFAULT_LARK_LOG_BASE_TOKEN = "NXrPbAWwkaPT0UswkSbcNkbfnqd";
+const DEFAULT_LARK_LOG_TABLE_ID = "tblnbDHOwmx3oevO";
 
 module.exports = async function handler(request, response) {
   setCorsHeaders(response);
@@ -212,8 +214,8 @@ async function writeLarkRecord(payload) {
   const config = {
     appId: process.env.LARK_APP_ID,
     appSecret: process.env.LARK_APP_SECRET,
-    baseToken: process.env.LARK_BASE_TOKEN,
-    tableId: process.env.LARK_TABLE_ID,
+    baseToken: process.env.LARK_LOG_BASE_TOKEN || DEFAULT_LARK_LOG_BASE_TOKEN,
+    tableId: process.env.LARK_LOG_TABLE_ID || DEFAULT_LARK_LOG_TABLE_ID,
     apiBase: process.env.LARK_API_BASE || "https://open.feishu.cn",
   };
 
@@ -282,8 +284,8 @@ async function diagnoseLarkLogging() {
   const config = {
     appId: process.env.LARK_APP_ID,
     appSecret: process.env.LARK_APP_SECRET,
-    baseToken: process.env.LARK_BASE_TOKEN,
-    tableId: process.env.LARK_TABLE_ID,
+    baseToken: process.env.LARK_LOG_BASE_TOKEN || DEFAULT_LARK_LOG_BASE_TOKEN,
+    tableId: process.env.LARK_LOG_TABLE_ID || DEFAULT_LARK_LOG_TABLE_ID,
     apiBase: process.env.LARK_API_BASE || "https://open.feishu.cn",
   };
 
