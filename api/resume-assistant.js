@@ -7,6 +7,9 @@ const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
 
 module.exports = async function handler(request, response) {
   setCorsHeaders(response);
+  let question = "";
+  let modelConfig = null;
+  let matches = [];
 
   if (request.method === "OPTIONS") {
     response.status(204).end();
@@ -20,39 +23,66 @@ module.exports = async function handler(request, response) {
 
   try {
     const body = typeof request.body === "string" ? JSON.parse(request.body || "{}") : request.body || {};
-    const question = String(body.question || "").trim();
+    question = String(body.question || "").trim();
 
     if (!question) {
       response.status(400).json({ error: "Question is required" });
       return;
     }
 
-    const modelConfig = getModelConfig();
+    modelConfig = getModelConfig();
     if (!modelConfig.apiKey) {
       response.status(500).json({ error: `${modelConfig.apiKeyName} is not configured` });
       return;
     }
 
     const knowledgeBase = loadKnowledgeBase();
-    const matches = retrieveKnowledge(question, knowledgeBase, 5);
+    matches = retrieveKnowledge(question, knowledgeBase, 5);
 
     if (!matches.length) {
+      const fallbackAnswer = "我目前的资料里还没有覆盖这个问题。你可以通过电话 18291980049 或邮箱 caoxi4929@qq.com 进一步联系我确认。";
+      logAssistantInteraction(request, {
+        question,
+        answer: fallbackAnswer,
+        sources: [],
+        provider: modelConfig.provider,
+        model: modelConfig.model,
+        status: "no_match",
+      });
       response.status(200).json({
-        answer: "我目前的资料里还没有覆盖这个问题。你可以通过电话 18291980049 或邮箱 caoxi4929@qq.com 进一步联系我确认。",
+        answer: fallbackAnswer,
         sources: [],
       });
       return;
     }
 
     const answer = sanitizeAnswer(await generateAnswer(modelConfig, question, matches));
+    const finalAnswer = answer || "我找到了相关资料，但暂时没有生成出稳定回答。建议换一种问法再试一次。";
+    logAssistantInteraction(request, {
+      question,
+      answer: finalAnswer,
+      sources: matches.map((item) => item.title),
+      provider: modelConfig.provider,
+      model: modelConfig.model,
+      status: answer ? "answered" : "empty_model_answer",
+    });
 
     response.status(200).json({
-      answer: answer || "我找到了相关资料，但暂时没有生成出稳定回答。建议换一种问法再试一次。",
+      answer: finalAnswer,
       sources: matches.map((item) => item.title),
       provider: modelConfig.provider,
       model: modelConfig.model,
     });
   } catch (error) {
+    logAssistantInteraction(request, {
+      question,
+      answer: "",
+      sources: matches.map((item) => item.title),
+      provider: modelConfig?.provider || "",
+      model: modelConfig?.model || "",
+      status: "error",
+      error: error.message,
+    });
     response.status(500).json({ error: "Resume assistant failed", detail: error.message });
   }
 };
@@ -126,6 +156,31 @@ function setCorsHeaders(response) {
   response.setHeader("Access-Control-Allow-Origin", process.env.ALLOWED_ORIGIN || "*");
   response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+function logAssistantInteraction(request, event) {
+  const headers = request.headers || {};
+  const getHeader = (name) => {
+    if (typeof headers.get === "function") return headers.get(name) || "";
+    return headers[name] || headers[name.toLowerCase()] || "";
+  };
+
+  const payload = {
+    event: "resume_assistant_interaction",
+    timestamp: new Date().toISOString(),
+    status: event.status,
+    question: event.question,
+    answer: event.answer,
+    sources: event.sources || [],
+    provider: event.provider || "",
+    model: event.model || "",
+    origin: getHeader("origin"),
+    referer: getHeader("referer"),
+    userAgent: getHeader("user-agent"),
+  };
+
+  if (event.error) payload.error = event.error;
+  console.log(JSON.stringify(payload));
 }
 
 function loadKnowledgeBase() {

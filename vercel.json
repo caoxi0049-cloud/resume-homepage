@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/resume-assistant.js": {
-      "maxDuration": 15
-    }
-  }
-}
