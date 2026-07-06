@@ -17,6 +17,11 @@ module.exports = async function handler(request, response) {
   }
 
   if (request.method === "GET") {
+    if (request.query?.diagnose === "lark") {
+      response.status(200).json(await diagnoseLarkLogging());
+      return;
+    }
+
     response.status(200).json({ ok: true, service: "resume-assistant" });
     return;
   }
@@ -271,6 +276,65 @@ async function getLarkTenantAccessToken(config) {
   }
 
   return result.tenant_access_token;
+}
+
+async function diagnoseLarkLogging() {
+  const config = {
+    appId: process.env.LARK_APP_ID,
+    appSecret: process.env.LARK_APP_SECRET,
+    baseToken: process.env.LARK_BASE_TOKEN,
+    tableId: process.env.LARK_TABLE_ID,
+    apiBase: process.env.LARK_API_BASE || "https://open.feishu.cn",
+  };
+
+  const result = {
+    ok: false,
+    configured: {
+      appId: Boolean(config.appId),
+      appSecret: Boolean(config.appSecret),
+      baseToken: Boolean(config.baseToken),
+      tableId: Boolean(config.tableId),
+    },
+    token: "not_checked",
+    recordWrite: "not_checked",
+  };
+
+  if (!config.appId || !config.appSecret || !config.baseToken || !config.tableId) {
+    result.reason = "missing_lark_environment_variables";
+    return result;
+  }
+
+  try {
+    await getLarkTenantAccessToken(config);
+    result.token = "ok";
+  } catch (error) {
+    result.token = "failed";
+    result.reason = error.message;
+    return result;
+  }
+
+  try {
+    await writeLarkRecord({
+      event: "resume_assistant_interaction",
+      timestamp: new Date().toISOString(),
+      status: "answered",
+      question: "飞书写入诊断测试",
+      answer: "这是一条用于验证 AI 简历助手问答记录能力的诊断记录。",
+      sources: ["diagnose"],
+      provider: "diagnose",
+      model: "diagnose",
+      origin: "",
+      referer: "diagnose",
+      userAgent: "diagnose",
+    });
+    result.recordWrite = "ok";
+    result.ok = true;
+  } catch (error) {
+    result.recordWrite = "failed";
+    result.reason = error.message;
+  }
+
+  return result;
 }
 
 function loadKnowledgeBase() {
