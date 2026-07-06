@@ -46,7 +46,7 @@ module.exports = async function handler(request, response) {
 
     if (!matches.length) {
       const fallbackAnswer = "我目前的资料里还没有覆盖这个问题。你可以通过电话 18291980049 或邮箱 caoxi4929@qq.com 进一步联系我确认。";
-      logAssistantInteraction(request, {
+      await recordAssistantInteraction(request, {
         question,
         answer: fallbackAnswer,
         sources: [],
@@ -63,7 +63,7 @@ module.exports = async function handler(request, response) {
 
     const answer = sanitizeAnswer(await generateAnswer(modelConfig, question, matches));
     const finalAnswer = answer || "我找到了相关资料，但暂时没有生成出稳定回答。建议换一种问法再试一次。";
-    logAssistantInteraction(request, {
+    await recordAssistantInteraction(request, {
       question,
       answer: finalAnswer,
       sources: matches.map((item) => item.title),
@@ -79,7 +79,7 @@ module.exports = async function handler(request, response) {
       model: modelConfig.model,
     });
   } catch (error) {
-    logAssistantInteraction(request, {
+    await recordAssistantInteraction(request, {
       question,
       answer: "",
       sources: matches.map((item) => item.title),
@@ -163,7 +163,22 @@ function setCorsHeaders(response) {
   response.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
-function logAssistantInteraction(request, event) {
+async function recordAssistantInteraction(request, event) {
+  const payload = buildAssistantInteractionPayload(request, event);
+  console.log(JSON.stringify(payload));
+
+  try {
+    await writeLarkRecord(payload);
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "resume_assistant_lark_record_failed",
+      timestamp: new Date().toISOString(),
+      error: error.message,
+    }));
+  }
+}
+
+function buildAssistantInteractionPayload(request, event) {
   const headers = request.headers || {};
   const getHeader = (name) => {
     if (typeof headers.get === "function") return headers.get(name) || "";
@@ -185,7 +200,77 @@ function logAssistantInteraction(request, event) {
   };
 
   if (event.error) payload.error = event.error;
-  console.log(JSON.stringify(payload));
+  return payload;
+}
+
+async function writeLarkRecord(payload) {
+  const config = {
+    appId: process.env.LARK_APP_ID,
+    appSecret: process.env.LARK_APP_SECRET,
+    baseToken: process.env.LARK_BASE_TOKEN,
+    tableId: process.env.LARK_TABLE_ID,
+    apiBase: process.env.LARK_API_BASE || "https://open.feishu.cn",
+  };
+
+  if (!config.appId || !config.appSecret || !config.baseToken || !config.tableId) return;
+
+  const tenantAccessToken = await getLarkTenantAccessToken(config);
+  const response = await fetch(
+    `${config.apiBase}/open-apis/bitable/v1/apps/${config.baseToken}/tables/${config.tableId}/records`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tenantAccessToken}`,
+        "Content-Type": "application/json; charset=utf-8",
+      },
+      body: JSON.stringify({
+        fields: {
+          提问时间: Date.parse(payload.timestamp),
+          用户问题: payload.question || "",
+          AI回答: payload.answer || "",
+          回答状态: payload.status || "",
+          命中知识库: (payload.sources || []).join("、"),
+          模型: [payload.provider, payload.model].filter(Boolean).join(" / "),
+          来源页面: payload.referer || payload.origin || "",
+          用户设备: payload.userAgent || "",
+          错误信息: payload.error || "",
+        },
+      }),
+    },
+  );
+
+  const resultText = await response.text();
+  if (!response.ok) {
+    throw new Error(`Lark record request failed: ${resultText.slice(0, 500)}`);
+  }
+
+  const result = JSON.parse(resultText || "{}");
+  if (result.code !== 0) {
+    throw new Error(`Lark record write failed: ${JSON.stringify(result).slice(0, 500)}`);
+  }
+}
+
+async function getLarkTenantAccessToken(config) {
+  const response = await fetch(`${config.apiBase}/open-apis/auth/v3/tenant_access_token/internal`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({
+      app_id: config.appId,
+      app_secret: config.appSecret,
+    }),
+  });
+
+  const resultText = await response.text();
+  if (!response.ok) {
+    throw new Error(`Lark token request failed: ${resultText.slice(0, 500)}`);
+  }
+
+  const result = JSON.parse(resultText || "{}");
+  if (result.code !== 0 || !result.tenant_access_token) {
+    throw new Error(`Lark token response invalid: ${JSON.stringify(result).slice(0, 500)}`);
+  }
+
+  return result.tenant_access_token;
 }
 
 function loadKnowledgeBase() {
