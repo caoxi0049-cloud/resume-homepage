@@ -7,6 +7,7 @@ exports.handler = async function handler(event) {
       method: event.httpMethod,
       body: event.body || "{}",
       headers: event.headers || {},
+      query: event.queryStringParameters || {},
     };
 
     const response = {
