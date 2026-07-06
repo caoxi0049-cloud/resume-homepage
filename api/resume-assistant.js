@@ -222,6 +222,24 @@ async function writeLarkRecord(payload) {
   if (!config.appId || !config.appSecret || !config.baseToken || !config.tableId) return;
 
   const tenantAccessToken = await getLarkTenantAccessToken(config);
+  const fields = {
+    提问时间: Date.parse(payload.timestamp),
+    用户问题: payload.question || "",
+    AI回答: payload.answer || "",
+    回答状态: payload.status || "",
+    命中知识库: (payload.sources || []).join("、"),
+    模型: [payload.provider, payload.model].filter(Boolean).join(" / "),
+    用户设备: payload.userAgent || "",
+    错误信息: payload.error || "",
+  };
+  const sourceUrl = normalizeLarkUrl(payload.referer || payload.origin);
+  if (sourceUrl) {
+    fields.来源页面 = {
+      text: sourceUrl,
+      link: sourceUrl,
+    };
+  }
+
   const response = await fetch(
     `${config.apiBase}/open-apis/bitable/v1/apps/${config.baseToken}/tables/${config.tableId}/records`,
     {
@@ -231,17 +249,7 @@ async function writeLarkRecord(payload) {
         "Content-Type": "application/json; charset=utf-8",
       },
       body: JSON.stringify({
-        fields: {
-          提问时间: Date.parse(payload.timestamp),
-          用户问题: payload.question || "",
-          AI回答: payload.answer || "",
-          回答状态: payload.status || "",
-          命中知识库: (payload.sources || []).join("、"),
-          模型: [payload.provider, payload.model].filter(Boolean).join(" / "),
-          来源页面: normalizeLarkUrl(payload.referer || payload.origin),
-          用户设备: payload.userAgent || "",
-          错误信息: payload.error || "",
-        },
+        fields,
       }),
     },
   );
