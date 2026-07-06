@@ -18,6 +18,7 @@
 - `profile-data.js`：主要可编辑内容，包括基础信息、关于我卡片、工作经历、项目经历、教育背景、助手问题和兜底回答。
 - `knowledge-base.js`：由 `AI简历助手知识库/*.txt` 生成的静态 RAG 知识库。
 - `AI简历助手知识库/`：RAG 源文档目录，维护项目复盘、职业定位和高频问答。
+- `scripts/generate-knowledge-base.js`：从 `AI简历助手知识库/*.txt` 重新生成 UTF-8 编码的 `knowledge-base.js`。
 - `api/resume-assistant.js`：RAG 简历助手后端核心逻辑，供 Vercel 或 Netlify wrapper 调用。
 - `netlify/functions/resume-assistant.js`：Netlify Functions 入口。
 - `assistant-config.js`：根据当前域名选择后端 API 地址。
@@ -53,6 +54,12 @@ D:\Programs\GitHubCLI\gh.exe
 ## 内容编辑规则
 
 `profile-data.js` 是简历内容的主要数据源。除非是页面结构调整，否则不要把简历正文硬编码到 `index.html`。
+
+更新 `AI简历助手知识库/*.txt` 后，运行以下命令重新生成静态知识库：
+
+```powershell
+D:\Programs\nodejs\node.exe scripts\generate-knowledge-base.js
+```
 
 当前内容边界：
 
