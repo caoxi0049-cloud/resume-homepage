@@ -16,6 +16,11 @@ module.exports = async function handler(request, response) {
     return;
   }
 
+  if (request.method === "GET") {
+    response.status(200).json({ ok: true, service: "resume-assistant" });
+    return;
+  }
+
   if (request.method !== "POST") {
     response.status(405).json({ error: "Method not allowed" });
     return;
@@ -154,7 +159,7 @@ async function generateAnswer(modelConfig, question, matches) {
 
 function setCorsHeaders(response) {
   response.setHeader("Access-Control-Allow-Origin", process.env.ALLOWED_ORIGIN || "*");
-  response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   response.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 

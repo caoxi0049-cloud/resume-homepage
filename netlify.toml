@@ -1,0 +1,17 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "LLM_PROVIDER,DEEPSEEK_MODEL,ALLOWED_ORIGIN"
+
+[functions]
+  node_bundler = "esbuild"
+
+[functions."resume-assistant"]
+  included_files = ["knowledge-base.js", "api/resume-assistant.js"]
+
+[[redirects]]
+  from = "/api/resume-assistant"
+  to = "/.netlify/functions/resume-assistant"
+  status = 200
