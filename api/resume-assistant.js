@@ -238,7 +238,7 @@ async function writeLarkRecord(payload) {
           回答状态: payload.status || "",
           命中知识库: (payload.sources || []).join("、"),
           模型: [payload.provider, payload.model].filter(Boolean).join(" / "),
-          来源页面: payload.referer || payload.origin || "",
+          来源页面: normalizeLarkUrl(payload.referer || payload.origin),
           用户设备: payload.userAgent || "",
           错误信息: payload.error || "",
         },
@@ -337,6 +337,11 @@ async function diagnoseLarkLogging() {
   }
 
   return result;
+}
+
+function normalizeLarkUrl(value) {
+  const text = String(value || "").trim();
+  return /^https?:\/\//i.test(text) ? text : "";
 }
 
 function loadKnowledgeBase() {
